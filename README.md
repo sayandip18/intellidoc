@@ -37,6 +37,7 @@ systems — without the overhead of auth, multi-tenancy, or a frontend.
 
 ## Architecture Overview
 
+```text
 POST /ingest
 ↓
 Celery Worker
@@ -60,12 +61,13 @@ LangGraph CRAG Loop
 └── Query Rewriter node (on retry)
 ↓
 SSE Streamed Response
+```
 
 ---
 
 ## Project Goals
 
-This project is intentionally scoped to backend and AI engineering depth:
+This project is scoped to backend and AI engineering depth:
 
 - Stateful multi-node agent graphs with LangGraph
 - Hybrid retrieval with dense + sparse search fusion
@@ -74,6 +76,8 @@ This project is intentionally scoped to backend and AI engineering depth:
 - Clean module separation between ingestion pipeline, retrieval, and RAG layers
 
 No frontend. No auth. No multi-tenancy. Just the core engineering.
+
+## To Run
 
 Activate venv
 
