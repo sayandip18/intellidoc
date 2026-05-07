@@ -45,6 +45,14 @@ class WorkerSettings(BaseSettings):
     chunk_size: int = Field(512, alias="CHUNK_SIZE")
     chunk_overlap: int = Field(64, alias="CHUNK_OVERLAP")
 
+    # ------------------------------------------------------------ MinIO / S3
+    minio_endpoint: str = Field("http://localhost:9000", alias="MINIO_ENDPOINT")
+    minio_access_key: str = Field("minioadmin", alias="MINIO_ACCESS_KEY")
+    minio_secret_key: str = Field("minioadmin", alias="MINIO_SECRET_KEY")
+    minio_upload_bucket: str = Field("intellidoc-uploads", alias="MINIO_UPLOAD_BUCKET")
+    minio_archive_bucket: str = Field("intellidoc-archive", alias="MINIO_ARCHIVE_BUCKET")
+    minio_region: str = Field("us-east-1", alias="MINIO_REGION")
+
     # ---------------------------------------------------- Retry policy
     max_retries: int = 3
     retry_backoff: int = 5  # seconds
@@ -52,6 +60,15 @@ class WorkerSettings(BaseSettings):
     class Config:
         env_file = ".env"
         populate_by_name = True
+
+    @property
+    def s3_client_kwargs(self) -> dict:
+        return {
+            "endpoint_url": self.minio_endpoint,
+            "aws_access_key_id": self.minio_access_key,
+            "aws_secret_access_key": self.minio_secret_key,
+            "region_name": self.minio_region,
+        }
 
     @property
     def celery_config(self) -> dict:
@@ -70,3 +87,6 @@ class WorkerSettings(BaseSettings):
             "task_soft_time_limit": self.celery_task_soft_time_limit,
             "result_expires": self.celery_result_expires,
         }
+
+
+settings = WorkerSettings()  # type: ignore[call-arg]

@@ -1,8 +1,13 @@
-import base64
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from app.worker.ingest_task import process_document
+import asyncio
+import uuid
 
-app = FastAPI()
+from fastapi import APIRouter, File, HTTPException, UploadFile
+
+from app.core.storage import get_s3_client
+from app.worker.ingest_task import process_document
+from config import settings
+
+router = APIRouter()
 
 ALLOWED_TYPES = {
     "application/pdf",
@@ -11,23 +16,41 @@ ALLOWED_TYPES = {
 }
 MAX_SIZE_MB = 10
 
-@app.post("/ingest")
+
+@router.post("/ingest")
 async def ingest_file(file: UploadFile = File(...)):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
             status_code=415,
             detail=f"Unsupported file type: {file.content_type}",
         )
-    content = file.read()
+
+    content = await file.read()
     if len(content) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large")
-    
-    encoded = base64.b64encode(content).decode("utf-8")
-    task = process_document.delay(file.filename, encoded, file.content_type)
 
-    return {"task_id": task.id, "filename": file.filename, "status": "queued"}
+    s3_key = f"uploads/{uuid.uuid4()}/{file.filename}"
 
-@app.get("/task-status/{task_id}")
+    def _upload() -> None:
+        client = get_s3_client()
+        client.put_object(
+            Bucket=settings.minio_upload_bucket,
+            Key=s3_key,
+            Body=content,
+            ContentType=file.content_type,
+        )
+
+    try:
+        await asyncio.to_thread(_upload)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Storage upload failed: {exc}") from exc
+
+    task = process_document.delay(file.filename, s3_key, file.content_type)
+
+    return {"task_id": task.id, "filename": file.filename, "s3_key": s3_key, "status": "queued"}
+
+
+@router.get("/task-status/{task_id}")
 async def get_task_status(task_id: str):
     task = process_document.AsyncResult(task_id)
     return {
