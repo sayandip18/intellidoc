@@ -1,0 +1,30 @@
+# Hot-reload overrides — applied automatically when running `docker compose up`
+# from the docker/ directory. Do not commit local secrets here.
+services:
+  api:
+    build:
+      target: builder   # skip the slim runtime stage — use the full build env
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ../app:/app/app   # live-sync source so --reload picks up changes
+      - ../.env:/app/.env:ro
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+
+  worker:
+    build:
+      target: builder
+    command: >
+      watchmedo auto-restart
+        --directory=/app/app
+        --pattern="*.py"
+        --recursive
+        --
+        celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
+    volumes:
+      - ../app:/app/app
+      - ../.env:/app/.env:ro
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1

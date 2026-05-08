@@ -49,6 +49,7 @@ LangGraph Ingestion Pipeline
 └── Metadata Storer node
 ↓
 Postgres + pgvector
+
 GET /query?q=...
 ↓
 Hybrid Search (pgvector + BM25 → RRF merge)
@@ -74,8 +75,6 @@ This project is scoped to backend and AI engineering depth:
 - Self-correcting RAG with automatic query reformulation
 - Async FastAPI with background job processing via Celery
 - Clean module separation between ingestion pipeline, retrieval, and RAG layers
-
-No frontend. No auth. No multi-tenancy. Just the core engineering.
 
 ## Ingestion graph topology
 
@@ -104,10 +103,95 @@ store_chunks ──[FAILED]──► END
 END
 ```
 
-## To Run
+## To Run (Dev)
 
-Activate venv
+### 1. Prerequisites
 
+- Docker Desktop running
+- Python 3.11+
+- An `.env` file at the repo root (see below)
+
+### 2. Configure environment
+
+Copy the example and fill in your API keys:
+
+```bash
+cp .env.example .env
 ```
-.venv\Scripts\activate
+
+Minimum required values:
+
+```env
+OPENAI_API_KEY=sk-...
+COHERE_API_KEY=...
+
+DATABASE_URL=postgresql+asyncpg://intellidoc:intellidoc@localhost:5432/intellidoc
+SYNC_DATABASE_URL=postgresql+psycopg2://intellidoc:intellidoc@localhost:5432/intellidoc
+REDIS_URL=redis://localhost:6379/0
 ```
+
+The Postgres and Redis credentials match what `docker-compose.yml` sets by default — no changes needed if you use the bundled infra.
+
+### 3. Start infra + app with hot reload
+
+```bash
+cd docker
+docker compose up --build
+```
+
+This spins up:
+- **Postgres** (pgvector/pgvector:pg16) on port `5432`
+- **Redis** on port `6379`
+- **API** (uvicorn `--reload`) on port `8000` — restarts on any `.py` change under `app/`
+- **Worker** (Celery + watchmedo) — restarts on any `.py` change under `app/`
+
+`docker-compose.override.yml` is picked up automatically and enables the hot-reload mounts. No extra flags needed.
+
+### 4. Run database migrations
+
+With the containers running, apply Alembic migrations:
+
+```bash
+docker compose exec api alembic upgrade head
+```
+
+### 5. Verify
+
+```bash
+curl http://localhost:8000/health
+```
+
+---
+
+### Running locally (without Docker)
+
+If you prefer to run the API and worker directly on your machine while Docker provides infra:
+
+```bash
+# Start only Postgres + Redis
+docker compose up postgres redis
+
+# In one terminal — activate venv and start API
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # macOS / Linux
+pip install -e ".[dev]"
+uvicorn app.main:app --reload
+
+# In another terminal — start Celery worker
+celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
+```
+
+---
+
+### Useful commands
+
+| Action | Command |
+|---|---|
+| Tail all logs | `docker compose logs -f` |
+| Tail API only | `docker compose logs -f api` |
+| Tail worker only | `docker compose logs -f worker` |
+| Open psql shell | `docker compose exec postgres psql -U intellidoc` |
+| Generate migration | `docker compose exec api alembic revision --autogenerate -m "description"` |
+| Rollback one step | `docker compose exec api alembic downgrade -1` |
+| Stop everything | `docker compose down` |
+| Stop + wipe DB volume | `docker compose down -v` |

@@ -55,6 +55,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    # Hot reload for Celery worker in Docker
+    "watchdog>=4.0.0",
+
     # Testing
     "pytest>=8.3.0",
     "pytest-asyncio>=0.24.0",
