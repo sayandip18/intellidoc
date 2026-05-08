@@ -77,6 +77,33 @@ This project is scoped to backend and AI engineering depth:
 
 No frontend. No auth. No multi-tenancy. Just the core engineering.
 
+## Ingestion graph topology
+
+```
+Graph topology:
+
+    START
+      │
+      ▼
+
+load_document ──[FAILED]──► END
+│
+▼
+chunk_document ──[FAILED]──► END
+│
+▼
+embed_chunks ──[FAILED]──► END
+│
+▼
+extract_entities ──[FAILED]──► END
+│
+▼
+store_chunks ──[FAILED]──► END
+│
+▼
+END
+```
+
 ## To Run
 
 Activate venv
