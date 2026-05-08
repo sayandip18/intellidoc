@@ -66,6 +66,24 @@ SSE Streamed Response
 
 ---
 
+## Known Limitations & Planned Optimizations
+
+### BM25 index rebuilt on every query
+
+`sparse_search` currently loads the full chunk corpus from Postgres and rebuilds a
+`BM25Okapi` index on every request. This is intentional — it keeps the implementation
+simple while the end-to-end pipeline is being proven. At scale it becomes a bottleneck. To fix:
+
+- **Pre-built index** — serialize the BM25 index (e.g. with `pickle`) after each ingestion
+  run and store it in Redis or on disk.
+- **Redis cache** — cache the serialized index with a TTL; invalidate and rebuild when new
+  chunks are stored (hook into the `store_chunks` LangGraph node).
+- **Incremental update** — BM25Okapi does not support incremental updates, so the rebuild
+  must cover the full corpus; with a Redis-cached index the cost is paid once per ingestion
+  batch rather than once per query.
+
+---
+
 ## Project Goals
 
 This project is scoped to backend and AI engineering depth:
@@ -140,6 +158,7 @@ docker compose up --build
 ```
 
 This spins up:
+
 - **Postgres** (pgvector/pgvector:pg16) on port `5432`
 - **Redis** on port `6379`
 - **API** (uvicorn `--reload`) on port `8000` — restarts on any `.py` change under `app/`
@@ -185,13 +204,13 @@ celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
 
 ### Useful commands
 
-| Action | Command |
-|---|---|
-| Tail all logs | `docker compose logs -f` |
-| Tail API only | `docker compose logs -f api` |
-| Tail worker only | `docker compose logs -f worker` |
-| Open psql shell | `docker compose exec postgres psql -U intellidoc` |
-| Generate migration | `docker compose exec api alembic revision --autogenerate -m "description"` |
-| Rollback one step | `docker compose exec api alembic downgrade -1` |
-| Stop everything | `docker compose down` |
-| Stop + wipe DB volume | `docker compose down -v` |
+| Action                | Command                                                                    |
+| --------------------- | -------------------------------------------------------------------------- |
+| Tail all logs         | `docker compose logs -f`                                                   |
+| Tail API only         | `docker compose logs -f api`                                               |
+| Tail worker only      | `docker compose logs -f worker`                                            |
+| Open psql shell       | `docker compose exec postgres psql -U intellidoc`                          |
+| Generate migration    | `docker compose exec api alembic revision --autogenerate -m "description"` |
+| Rollback one step     | `docker compose exec api alembic downgrade -1`                             |
+| Stop everything       | `docker compose down`                                                      |
+| Stop + wipe DB volume | `docker compose down -v`                                                   |
