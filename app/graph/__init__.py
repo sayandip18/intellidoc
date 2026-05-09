@@ -7,6 +7,7 @@ from app.graph.ingestion import (
     IngestionState,
     IngestionStatus,
 )
+from app.graph.crag import build_crag_graph, crag_graph, CRAGState
 
 __all__ = [
     "ingestion_graph",
@@ -16,4 +17,7 @@ __all__ = [
     "FileType",
     "ChunkMetadata",
     "ExtractedEntity",
+    "crag_graph",
+    "build_crag_graph",
+    "CRAGState",
 ]

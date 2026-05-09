@@ -94,33 +94,6 @@ This project is scoped to backend and AI engineering depth:
 - Async FastAPI with background job processing via Celery
 - Clean module separation between ingestion pipeline, retrieval, and RAG layers
 
-## Ingestion graph topology
-
-```
-Graph topology:
-
-    START
-      │
-      ▼
-
-load_document ──[FAILED]──► END
-│
-▼
-chunk_document ──[FAILED]──► END
-│
-▼
-embed_chunks ──[FAILED]──► END
-│
-▼
-extract_entities ──[FAILED]──► END
-│
-▼
-store_chunks ──[FAILED]──► END
-│
-▼
-END
-```
-
 ## To Run (Dev)
 
 ### 1. Prerequisites
