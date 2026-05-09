@@ -15,26 +15,22 @@ import logging
 import os
 
 from langchain_openai import OpenAIEmbeddings
+from pydantic import SecretStr
 from tenacity import (
     retry,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,
 )
-from pydantic import SecretStr
-from state import IngestionState, IngestionStatus
+
+from app.graph.ingestion.state import IngestionState, IngestionStatus
 
 logger = logging.getLogger(__name__)
 
-# Number of chunk texts sent per OpenAI API call.
 # text-embedding-3-small accepts up to 2048 inputs per call;
 # we stay conservative for token-limit headroom.
 _BATCH_SIZE = 128
 
-
-# ---------------------------------------------------------------------------
-# Retry-wrapped embedding call
-# ---------------------------------------------------------------------------
 
 @retry(
     reraise=True,
@@ -46,17 +42,7 @@ def _embed_batch(client: OpenAIEmbeddings, texts: list[str]) -> list[list[float]
     return client.embed_documents(texts)
 
 
-# ---------------------------------------------------------------------------
-# Node
-# ---------------------------------------------------------------------------
-
 def embed_chunks(state: IngestionState) -> dict:
-    """
-    LangGraph node — embed_chunks.
-
-    Reads state['chunks'] and returns state['embeddings'] — a list of
-    float vectors, one per chunk, in the same order.
-    """
     logger.info("embed_chunks | doc_id=%s", state["document_id"])
 
     chunks = state.get("chunks", [])
@@ -77,7 +63,6 @@ def embed_chunks(state: IngestionState) -> dict:
     texts = [doc.page_content for doc in chunks]
     all_embeddings: list[list[float]] = []
 
-    # Batch the API calls
     for batch_start in range(0, len(texts), _BATCH_SIZE):
         batch = texts[batch_start : batch_start + _BATCH_SIZE]
         logger.debug(
@@ -96,7 +81,6 @@ def embed_chunks(state: IngestionState) -> dict:
             }
         all_embeddings.extend(vectors)
 
-    # Sanity check: embedding count must match chunk count
     if len(all_embeddings) != len(chunks):
         msg = (
             f"Embedding count mismatch: got {len(all_embeddings)} "

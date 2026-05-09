@@ -1,6 +1,5 @@
-from app.graph.ingestion import (
-    build_ingestion_graph,
-    ingestion_graph,
+from app.graph.ingestion.graph import build_ingestion_graph, ingestion_graph
+from app.graph.ingestion.state import (
     ChunkMetadata,
     ExtractedEntity,
     FileType,
