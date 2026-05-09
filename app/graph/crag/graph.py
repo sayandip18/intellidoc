@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from langgraph.graph import END, START, StateGraph
 
-from app.graph.crag.nodes import faithfulness_scorer, generator, query_rewriter
+from app.graph.crag.nodes import faithfulness_scorer, generator, query_rewriter, retriever
 from app.graph.crag.state import CRAGState
 
-FAITHFULNESS_THRESHOLD = 0.7
+FAITHFULNESS_THRESHOLD = 0.75
 MAX_RETRIES = 2
 
 
@@ -18,13 +18,15 @@ def _route_after_scoring(state: CRAGState) -> str:
 def build_crag_graph() -> StateGraph:
     graph = StateGraph(CRAGState)
 
+    graph.add_node("retriever", retriever)
     graph.add_node("generator", generator)
     graph.add_node("faithfulness_scorer", faithfulness_scorer)
     graph.add_node("query_rewriter", query_rewriter)
 
-    graph.add_edge(START, "generator")
+    graph.add_edge(START, "retriever")
+    graph.add_edge("retriever", "generator")
     graph.add_edge("generator", "faithfulness_scorer")
-    graph.add_edge("query_rewriter", "generator")
+    graph.add_edge("query_rewriter", "retriever")
 
     graph.add_conditional_edges(
         "faithfulness_scorer",

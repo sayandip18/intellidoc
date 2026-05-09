@@ -52,21 +52,20 @@ Postgres + pgvector
 
 GET /query?q=...
 ↓
-Hybrid Search (pgvector + BM25 → RRF merge)
-↓
-Cohere Reranker
-↓
 LangGraph CRAG Loop
+├── Retriever node
+│   ├── Hybrid Search (pgvector + BM25 → RRF merge)
+│   └── Cohere Reranker
 ├── Generator node
 ├── Faithfulness Scorer node
-└── Query Rewriter node (on retry)
+└── Query Rewriter node → Retriever node (on retry)
 ↓
 SSE Streamed Response
 ```
 
 ---
 
-## Known Limitations & Planned Optimizations
+## Known Limitations
 
 ### BM25 index rebuilt on every query
 
@@ -83,16 +82,6 @@ simple while the end-to-end pipeline is being proven. At scale it becomes a bott
   batch rather than once per query.
 
 ---
-
-## Project Goals
-
-This project is scoped to backend and AI engineering depth:
-
-- Stateful multi-node agent graphs with LangGraph
-- Hybrid retrieval with dense + sparse search fusion
-- Self-correcting RAG with automatic query reformulation
-- Async FastAPI with background job processing via Celery
-- Clean module separation between ingestion pipeline, retrieval, and RAG layers
 
 ## To Run (Dev)
 
