@@ -1,7 +1,7 @@
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from config import settings
+from app.core.config import settings
 
 
 def get_s3_client():

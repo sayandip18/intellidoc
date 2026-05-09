@@ -1,6 +1,6 @@
 from app.core.storage import get_s3_client
 from app.worker.celery_app import celery_app
-from config import settings
+from app.core.config import settings
 
 
 @celery_app.task(

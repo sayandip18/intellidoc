@@ -33,6 +33,10 @@ services:
       dockerfile: Dockerfile
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
+      SYNC_DATABASE_URL: postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
@@ -47,6 +51,10 @@ services:
       dockerfile: Dockerfile
     command: celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
     env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
+      SYNC_DATABASE_URL: postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
+      REDIS_URL: redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy

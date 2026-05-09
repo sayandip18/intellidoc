@@ -1,8 +1,11 @@
 from celery import Celery
-from config import settings
+from app.core.config import settings
 
-celery_app = Celery("intellidoc")
-celery_app.config_from_object(settings.celery_config)
+celery_app = Celery(
+    "intellidoc",
+    broker=settings.redis_url,
+    backend=settings.redis_url,
+)
 celery_app.conf.update(
     task_routes={
         "process_document": {"queue": "ingest"},

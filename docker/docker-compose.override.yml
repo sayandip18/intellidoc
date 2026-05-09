@@ -6,25 +6,31 @@ services:
       target: builder   # skip the slim runtime stage — use the full build env
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ../app:/app/app   # live-sync source so --reload picks up changes
-      - ../.env:/app/.env:ro
+      - ../app:/build/app   # live-sync source so --reload picks up changes
+      - ../.env:/build/.env:ro
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
+      - SYNC_DATABASE_URL=postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
+      - REDIS_URL=redis://redis:6379/0
 
   worker:
     build:
       target: builder
     command: >
       watchmedo auto-restart
-        --directory=/app/app
+        --directory=/build/app
         --pattern="*.py"
         --recursive
         --
         celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
     volumes:
-      - ../app:/app/app
-      - ../.env:/app/.env:ro
+      - ../app:/build/app
+      - ../.env:/build/.env:ro
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       - PYTHONUNBUFFERED=1
+      - DATABASE_URL=postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
+      - SYNC_DATABASE_URL=postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
+      - REDIS_URL=redis://redis:6379/0

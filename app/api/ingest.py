@@ -5,7 +5,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 
 from app.core.storage import get_s3_client
 from app.worker.ingest_task import process_document
-from config import settings
+from app.core.config import settings
 
 router = APIRouter()
 
