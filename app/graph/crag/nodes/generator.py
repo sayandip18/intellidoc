@@ -27,7 +27,7 @@ def _format_context(state: CRAGState) -> str:
     return "\n\n".join(lines)
 
 
-def generator(state: CRAGState) -> dict:
+async def generator(state: CRAGState) -> dict:
     logger.info("generator | query=%r  chunks=%d", state["query"], len(state["chunks"]))
 
     context = _format_context(state)
@@ -37,9 +37,10 @@ def generator(state: CRAGState) -> dict:
         model=os.environ.get("LLM_MODEL", "gpt-4o-mini"),
         api_key=SecretStr(os.environ["OPENAI_API_KEY"]),
         temperature=0,
+        streaming=True,
     )
 
-    response = llm.invoke(
+    response = await llm.ainvoke(
         [
             SystemMessage(content=_SYSTEM_PROMPT),
             HumanMessage(content=user_message),

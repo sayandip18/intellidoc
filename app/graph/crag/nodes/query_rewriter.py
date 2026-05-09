@@ -25,7 +25,7 @@ _SYSTEM_PROMPT = (
 )
 
 
-def query_rewriter(state: CRAGState) -> dict:
+async def query_rewriter(state: CRAGState) -> dict:
     logger.info("query_rewriter | original=%r", state["query"])
 
     user_message = (
@@ -40,7 +40,7 @@ def query_rewriter(state: CRAGState) -> dict:
         temperature=0.3,
     )
 
-    response = llm.invoke(
+    response = await llm.ainvoke(
         [
             SystemMessage(content=_SYSTEM_PROMPT),
             HumanMessage(content=user_message),

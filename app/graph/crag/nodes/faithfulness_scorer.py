@@ -34,7 +34,7 @@ def _format_context(state: CRAGState) -> str:
     return "\n\n".join(lines)
 
 
-def faithfulness_scorer(state: CRAGState) -> dict:
+async def faithfulness_scorer(state: CRAGState) -> dict:
     attempt = state["attempt"]
     logger.info(
         "faithfulness_scorer | attempt=%d  chunks=%d",
@@ -52,7 +52,7 @@ def faithfulness_scorer(state: CRAGState) -> dict:
         model_kwargs={"response_format": {"type": "json_object"}},
     )
 
-    response = llm.invoke(
+    response = await llm.ainvoke(
         [
             SystemMessage(content=_SYSTEM_PROMPT),
             HumanMessage(content=user_message),
