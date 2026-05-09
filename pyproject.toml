@@ -43,6 +43,9 @@ dependencies = [
     "python-docx>=1.1.0",
     "spacy>=3.7.0",
 
+    # Storage
+    "boto3>=1.35.0",             # S3 / MinIO client
+
     # Search
     "rank-bm25>=0.2.2",          # sparse BM25 search
     "cohere>=5.9.0",             # reranker

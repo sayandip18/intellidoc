@@ -1,5 +1,6 @@
 import boto3
 from botocore.config import Config
+from botocore.exceptions import ClientError
 from config import settings
 
 
@@ -18,5 +19,5 @@ def ensure_buckets(client) -> None:
     for bucket in (settings.minio_upload_bucket, settings.minio_archive_bucket):
         try:
             client.head_bucket(Bucket=bucket)
-        except client.exceptions.ClientError:
+        except ClientError:
             client.create_bucket(Bucket=bucket)
