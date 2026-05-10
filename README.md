@@ -181,3 +181,11 @@ celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
 | Rollback one step     | `docker compose exec api alembic downgrade -1`                             |
 | Stop everything       | `docker compose down`                                                      |
 | Stop + wipe DB volume | `docker compose down -v`                                                   |
+
+## Upcoming features and improvements
+
+1. Long term memory, memory retrieval
+2. Planner node, tool execution
+3. Codebase understanding, repo ingestion, graph memory
+
+The above phases aim to transform this project from an agentic RAG to an advances AI agent.
