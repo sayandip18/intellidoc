@@ -3,7 +3,7 @@ from __future__ import annotations
 import cohere
 
 from app.models.chunk import Chunk
-from config import settings
+from app.core.config import settings
 
 _RERANK_MODEL = "rerank-english-v3.0"
 

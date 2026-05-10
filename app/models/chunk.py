@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, List, Optional
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ForeignKey, Integer, Text
+from sqlalchemy import ForeignKey, Integer, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
@@ -15,6 +15,7 @@ EMBEDDING_DIMENSIONS = 1536  # OpenAI text-embedding-3-small
 
 class Chunk(Base, TimestampMixin):
     __tablename__ = "chunks"
+    __table_args__ = (UniqueConstraint("document_id", "chunk_index", name="uq_chunks_document_chunk"),)
 
     id: Mapped[str] = mapped_column(
         primary_key=True, default=generate_uuid

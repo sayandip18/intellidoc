@@ -47,6 +47,8 @@ class IngestionState(TypedDict):
     """
 
     document_id: str
+    filename: str
+    content_hash: str
     source_path: str
     file_type: FileType
     raw_content: Optional[bytes]

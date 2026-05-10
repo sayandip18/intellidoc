@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY pyproject.toml .
 RUN pip install --upgrade pip && pip install --no-cache-dir -e ".[dev]"
 
+# Download spaCy model in builder so target: builder (dev override) also has it
+RUN python -m spacy download en_core_web_sm
+
 
 # Runtime stage
 FROM python:3.11-slim
@@ -31,8 +34,5 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy source
 COPY . .
-
-# Download spaCy model (baked into the image — workers need it)
-RUN python -m spacy download en_core_web_sm
 
 EXPOSE 8000

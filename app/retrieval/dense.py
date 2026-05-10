@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from app.core.db import async_session_factory
 from app.models.chunk import Chunk
-from config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 

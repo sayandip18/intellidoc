@@ -26,6 +26,7 @@ class Document(Base, TimestampMixin):
     )
     filename: Mapped[str] = mapped_column(Text, nullable=False)
     file_type: Mapped[str] = mapped_column(Text, nullable=False)  # pdf | txt | docx
+    content_hash: Mapped[Optional[str]] = mapped_column(Text, nullable=True, unique=True)
     raw_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(
         Text, nullable=False, default=DocumentStatus.PENDING

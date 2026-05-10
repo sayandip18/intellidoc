@@ -11,21 +11,25 @@ Uses psycopg3 sync API — this node runs inside the Celery worker.
 from __future__ import annotations
 
 import logging
-import os
 import uuid
 
 import psycopg
 from pgvector.psycopg import register_vector
 
+from app.core.config import settings
 from app.graph.ingestion.state import IngestionState, IngestionStatus
 
 logger = logging.getLogger(__name__)
 
 _UPSERT_DOCUMENT = """
-    INSERT INTO documents (id, filename, file_type, status)
-    VALUES (%s, %s, %s, 'completed')
+    INSERT INTO documents (id, filename, file_type, content_hash, status)
+    VALUES (%s, %s, %s, %s, 'completed')
     ON CONFLICT (id)
-    DO UPDATE SET status = 'completed';
+    DO UPDATE SET
+        filename     = EXCLUDED.filename,
+        file_type    = EXCLUDED.file_type,
+        content_hash = EXCLUDED.content_hash,
+        status       = 'completed';
 """
 
 _INSERT_CHUNK = """
@@ -73,7 +77,7 @@ def store_chunks(state: IngestionState) -> dict:
             "node_trace": ["store_chunks"],
         }
 
-    dsn = os.environ["POSTGRES_DSN"]
+    dsn = settings.sync_database_url.replace("+psycopg2", "", 1)
 
     chunk_ids = [str(uuid.uuid4()) for _ in chunks]
     chunk_index_to_id = {
@@ -88,7 +92,7 @@ def store_chunks(state: IngestionState) -> dict:
             with conn.transaction():
                 conn.execute(
                     _UPSERT_DOCUMENT,
-                    (doc_id, state["source_path"], state["file_type"].value),
+                    (doc_id, state["filename"], state["file_type"].value, state["content_hash"]),
                 )
 
                 chunk_rows = [

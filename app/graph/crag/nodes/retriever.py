@@ -34,6 +34,7 @@ async def retriever(state: CRAGState) -> dict:
         sparse_search(query),
     )
     merged = rrf_merge(dense, sparse)
+    logger.info("retriever | dense=%d sparse=%d merged=%d", len(dense), len(sparse), len(merged))
     reranked = await rerank(query, merged)
 
     docs = [_to_document(chunk) for chunk in reranked]

@@ -1,9 +1,13 @@
 import asyncio
+import hashlib
 import uuid
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from sqlalchemy import select
 
+from app.core.db import async_session_factory
 from app.core.storage import ensure_buckets, get_s3_client
+from app.models.document import Document
 from app.worker.ingest_task import process_document
 from app.core.config import settings
 
@@ -28,6 +32,20 @@ async def ingest_file(file: UploadFile = File(...)):
     content = await file.read()
     if len(content) > MAX_SIZE_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail="File too large")
+
+    content_hash = hashlib.sha256(content).hexdigest()
+    async with async_session_factory() as session:
+        result = await session.execute(
+            select(Document).where(Document.content_hash == content_hash)
+        )
+        existing = result.scalar_one_or_none()
+    if existing is not None:
+        return {
+            "document_id": existing.id,
+            "filename": existing.filename,
+            "status": existing.status,
+            "duplicate": True,
+        }
 
     s3_key = f"uploads/{uuid.uuid4()}/{file.filename}"
 

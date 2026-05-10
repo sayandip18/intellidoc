@@ -86,16 +86,46 @@ SSE streamed response
 
 ```
 app/
-├── api/            # FastAPI routers (ingest, query, documents, jobs)
-├── core/           # Config, DB engine, Redis connection, exceptions
-├── models/         # SQLAlchemy ORM models
-├── schemas/        # Pydantic request/response schemas
-├── pipeline/       # LangGraph ingestion graph (nodes + chains)
-├── retrieval/      # Dense, sparse, hybrid search, reranker
-├── rag/            # LangGraph CRAG query graph (nodes)
-├── worker/         # Celery app and tasks
-├── parsers/        # Document parsers (pdf, txt, docx)
-└── main.py         # FastAPI app entrypoint
+├── api/                        # FastAPI routers
+│   ├── ingest.py
+│   └── query.py
+├── core/                       # Config, DB engine, storage client
+│   ├── config.py
+│   ├── db.py
+│   └── storage.py
+├── graph/                      # LangGraph graphs
+│   ├── crag/                   # CRAG query graph (runs in FastAPI async context)
+│   │   ├── graph.py
+│   │   ├── state.py
+│   │   └── nodes/
+│   │       ├── faithfulness_scorer.py
+│   │       ├── generator.py
+│   │       ├── query_rewriter.py
+│   │       └── retriever.py
+│   └── ingestion/              # Ingestion graph (runs in Celery worker)
+│       ├── graph.py
+│       ├── state.py
+│       └── nodes/
+│           ├── chunk_document.py
+│           ├── embed_chunks.py
+│           ├── extract_entities.py
+│           ├── load_document.py
+│           └── store_chunks.py
+├── models/                     # SQLAlchemy ORM models
+│   ├── base.py
+│   ├── chunk.py
+│   ├── document.py
+│   ├── entity.py
+│   └── job.py
+├── retrieval/                  # Hybrid search + reranker
+│   ├── dense.py
+│   ├── reranker.py
+│   ├── rrf.py
+│   └── sparse.py
+├── worker/                     # Celery app and tasks
+│   ├── celery_app.py
+│   └── ingest_task.py
+└── main.py                     # FastAPI app entrypoint
 ```
 
 ---
@@ -116,7 +146,7 @@ All primary keys are UUID strings, generated in Python via `generate_uuid()` in
 ### ORM models vs Pydantic schemas
 
 - `app/models/` — SQLAlchemy ORM models, used for DB interaction only
-- `app/schemas/` — Pydantic v2 models, used for API request/response validation
+- Pydantic request/response schemas are currently inlined in the API route files (`app/api/`)
 - Never return ORM model objects directly from API endpoints — always serialize to schema
 
 ### Relationships
@@ -129,8 +159,8 @@ All primary keys are UUID strings, generated in Python via `generate_uuid()` in
 
 There are two separate graphs:
 
-- `app/pipeline/graph.py` — ingestion graph (runs inside Celery worker)
-- `app/rag/graph.py` — CRAG query graph (runs inside FastAPI async context)
+- `app/graph/ingestion/graph.py` — ingestion graph (runs inside Celery worker)
+- `app/graph/crag/graph.py` — CRAG query graph (runs inside FastAPI async context)
   Keep their states, nodes, and chains strictly separate.
 
 ### Environment config
@@ -157,7 +187,7 @@ Change this constant if switching from OpenAI to a different embedding model (Co
 
 ### pgvector index
 
-An HNSW or IVFFlat index should be created on `chunks.embedding` for fast similarity search.
+An HNSW index should be created on `chunks.embedding` for fast similarity search.
 This is handled in an Alembic migration — do not add it manually.
 
 ---
