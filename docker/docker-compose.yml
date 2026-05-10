@@ -37,12 +37,15 @@ services:
       DATABASE_URL: postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
       SYNC_DATABASE_URL: postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
       REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: http://minio:9000
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   worker:
@@ -55,11 +58,33 @@ services:
       DATABASE_URL: postgresql+asyncpg://intellidoc:intellidoc@postgres:5432/intellidoc
       SYNC_DATABASE_URL: postgresql+psycopg2://intellidoc:intellidoc@postgres:5432/intellidoc
       REDIS_URL: redis://redis:6379/0
+      MINIO_ENDPOINT: http://minio:9000
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres_data:
+  minio_data:

@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 
-from app.core.storage import get_s3_client
+from app.core.storage import ensure_buckets, get_s3_client
 from app.worker.ingest_task import process_document
 from app.core.config import settings
 
@@ -14,7 +14,7 @@ ALLOWED_TYPES = {
     "text/plain",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
-MAX_SIZE_MB = 10
+MAX_SIZE_MB = 30
 
 
 @router.post("/ingest")
@@ -33,6 +33,7 @@ async def ingest_file(file: UploadFile = File(...)):
 
     def _upload() -> None:
         client = get_s3_client()
+        ensure_buckets(client)
         client.put_object(
             Bucket=settings.minio_upload_bucket,
             Key=s3_key,

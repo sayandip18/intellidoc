@@ -26,6 +26,7 @@ systems — without the overhead of auth, multi-tenancy, or a frontend.
 | AI Orchestration | LangGraph, LangChain                 |
 | Embeddings & LLM | OpenAI                               |
 | Reranker         | Cohere                               |
+| Object Storage   | MinIO (S3-compatible)                |
 | Vector Store     | Postgres + pgvector                  |
 | ORM & Migrations | SQLAlchemy (async), Alembic          |
 | Validation       | Pydantic v2                          |
@@ -39,6 +40,8 @@ systems — without the overhead of auth, multi-tenancy, or a frontend.
 
 ```text
 POST /ingest
+↓
+MinIO (file stored to object storage)
 ↓
 Celery Worker
 ↓
@@ -110,7 +113,7 @@ SYNC_DATABASE_URL=postgresql+psycopg2://intellidoc:intellidoc@localhost:5432/int
 REDIS_URL=redis://localhost:6379/0
 ```
 
-The Postgres and Redis credentials match what `docker-compose.yml` sets by default — no changes needed if you use the bundled infra.
+The Postgres, Redis, and MinIO credentials match what `docker-compose.yml` sets by default — no changes needed if you use the bundled infra.
 
 ### 3. Start infra + app with hot reload
 
@@ -123,6 +126,7 @@ This spins up:
 
 - **Postgres** (pgvector/pgvector:pg16) on port `5432`
 - **Redis** on port `6379`
+- **MinIO** on port `9000` (API) and `9001` (web console — open `http://localhost:9001`, login `minioadmin/minioadmin`)
 - **API** (uvicorn `--reload`) on port `8000` — restarts on any `.py` change under `app/`
 - **Worker** (Celery + watchmedo) — restarts on any `.py` change under `app/`
 
@@ -149,8 +153,8 @@ curl http://localhost:8000/health
 If you prefer to run the API and worker directly on your machine while Docker provides infra:
 
 ```bash
-# Start only Postgres + Redis
-docker compose up postgres redis
+# Start only Postgres + Redis + MinIO
+docker compose up postgres redis minio
 
 # In one terminal — activate venv and start API
 .venv\Scripts\activate          # Windows
@@ -172,6 +176,7 @@ celery -A app.worker.celery_app worker --loglevel=info -Q ingest,default
 | Tail API only         | `docker compose logs -f api`                                               |
 | Tail worker only      | `docker compose logs -f worker`                                            |
 | Open psql shell       | `docker compose exec postgres psql -U intellidoc`                          |
+| MinIO web console     | `http://localhost:9001` (login: `minioadmin` / `minioadmin`)               |
 | Generate migration    | `docker compose exec api alembic revision --autogenerate -m "description"` |
 | Rollback one step     | `docker compose exec api alembic downgrade -1`                             |
 | Stop everything       | `docker compose down`                                                      |
